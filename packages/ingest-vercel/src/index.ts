@@ -1,28 +1,30 @@
-import type { ServerOptions } from 'http';
-import type { BuildOptions, BuilderOptions } from '../buildtime/types';
+import type { 
+  BuildOptions, 
+  BuilderOptions 
+} from '@blanquera/ingest/dist/buildtime/types';
 
-export type { IM, SR } from './helpers';
-
-import path from 'path';
-import NodeFS from '../buildtime/filesystem/NodeFS';
-import FileLoader from '../buildtime/filesystem/FileLoader';
-import Router from '../buildtime/Router';
+import NodeFS from '@blanquera/ingest/dist/buildtime/filesystem/NodeFS';
+import FileLoader from '@blanquera/ingest/dist/buildtime/filesystem/FileLoader';
+import Router from '@blanquera/ingest/dist/buildtime/Router';
 
 import Builder from './Builder';
 import Server from './Server';
 
-import Nest from '../payload/Nest';
-import Payload from '../payload/Payload';
-import Request from '../payload/Request';
-import Response from '../payload/Response';
-import { ReadSession, WriteSession } from '../payload/Session'; 
+import Nest from '@blanquera/ingest/dist/payload/Nest';
+import Payload from '@blanquera/ingest/dist/payload/Payload';
+import Request from '@blanquera/ingest/dist/payload/Request';
+import Response from '@blanquera/ingest/dist/payload/Response';
+import { 
+  ReadSession, 
+  WriteSession 
+} from '@blanquera/ingest/dist/payload/Session'; 
 
 import {
   formDataToObject,
-  imQueryToObject,
-  imToURL,
+  fetchQueryToObject,
+  fetchToURL,
   loader,
-  dispatcher
+  response
 } from './helpers';
 
 export {
@@ -35,39 +37,35 @@ export {
   ReadSession,
   WriteSession,
   formDataToObject,
-  imQueryToObject,
-  imToURL,
+  fetchQueryToObject,
+  fetchToURL,
   loader,
-  dispatcher
+  response
 }
 
-export default function http(options: BuildOptions & BuilderOptions = {}) {
+export default function vercel(options: BuildOptions & BuilderOptions = {}) {
   const { 
     tsconfig, 
     fs = new NodeFS(),
     cwd = process.cwd(),
-    buildDir = './.http', 
-    manifestName = 'manifest.json',
+    buildDir = './api', 
     ...build 
   } = options;
   
   const loader = new FileLoader(fs, cwd);
   const router = new Router();
   const builder = new Builder(router, { tsconfig });
+  const server = new Server();
   const endpath = loader.absolute(buildDir);
-  const manifest = path.resolve(endpath, manifestName);
-  const server = new Server(manifest, loader);
 
   return {
     endpath,
-    manifest,
     server,
     router,
     builder,
     loader,
     context: server.context,
-    build: () => builder.build({ ...build, fs, cwd, buildDir, manifestName }),
-    create: (options: ServerOptions = {}) => server.create(options),
+    build: () => builder.build({ ...build, fs, cwd, buildDir }),
     on: (path: string, entry: string, priority?: number) => {
       return router.on(path, entry, priority);
     },
@@ -104,5 +102,5 @@ export default function http(options: BuildOptions & BuilderOptions = {}) {
     trace: (path: string, entry: string, priority?: number) => {
       return router.trace(path, entry, priority);
     }
-  };
+  }
 }

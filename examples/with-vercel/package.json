@@ -4,10 +4,11 @@
   "description": "A simple boilerplate for building web components with Temple",
   "private": true,
   "scripts": {
-    "dev": "ts-node src/index.ts"
+    "build:ts": "tsc",
+    "build:api": "ts-node src/build.ts"
   },
   "dependencies": {
-    "@blanquera/ingest": "0.1.0"
+    "@blanquera/ingest-vercel": "0.0.1"
   },
   "devDependencies": {
     "@types/node": "22.1.0",

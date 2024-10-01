@@ -1,8 +1,8 @@
 {
-  "name": "@blanquera/ingest",
+  "name": "@blanquera/ingest-vercel",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "An event driven serverless framework",
+  "description": "Using Ingest to generate Vercel functions.",
   "author": "Chris <chris@blanquera.io>",
   "homepage": "https://github.com/blanquera/ingest/tree/main/packages/types",
   "bugs": "https://github.com/blanquera/ingest/issues",
@@ -10,10 +10,6 @@
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
-    "build.js",
-    "build.d.ts",
-    "http.js",
-    "http.d.ts",
     "index.js",
     "index.d.ts",
     "dist",
@@ -24,6 +20,7 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@blanquera/ingest": "0.0.1",
     "cookie": "0.6.0"
   },
   "devDependencies": {

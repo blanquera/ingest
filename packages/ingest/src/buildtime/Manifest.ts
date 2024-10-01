@@ -19,11 +19,11 @@ export default class Manifest extends Set<BuildInfo> {
   //loader
   public readonly loader: FileLoader;
   //build options
-  protected _build: ESBuildOptions;
+  public readonly options: ESBuildOptions;
   //build directory
-  protected _endpath: string;
+  public readonly builddir: string;
   //manifest path
-  protected _manifest: string;
+  public readonly path: string;
 
   /**
    * Presets and distributes all the options
@@ -40,7 +40,7 @@ export default class Manifest extends Set<BuildInfo> {
     
     this.loader = new FileLoader(fs, cwd);
 
-    this._build = {
+    this.options = {
       bundle: true,
       minify: false,
       format: 'cjs', 
@@ -49,8 +49,8 @@ export default class Manifest extends Set<BuildInfo> {
       write: true,
       ...build
     };
-    this._endpath = this.loader.absolute(buildDir);
-    this._manifest = path.resolve(this._endpath, manifestName);
+    this.builddir = this.loader.absolute(buildDir);
+    this.path = path.resolve(this.builddir, manifestName);
   }
 
   /**
@@ -69,29 +69,20 @@ export default class Manifest extends Set<BuildInfo> {
       //make an id from the sorted combination of entries
       const id = serialize(entries.join(','));
       //determine the source and destination paths
-      const source = path.join(this._endpath, `${id}.ts`);
-      const destination = path.join(this._endpath, `${id}.js`);
+      const source = path.join(this.builddir, `${id}.ts`);
+      const destination = path.join(this.builddir, `${id}.js`);
       //add to the virtual file system
-      vfs.set(source, transpile(entries));
+      vfs.set(source, transpile({...info, entries }));
       //add to the build results
       build.add({ ...info, id, entry: destination });
     }
     //build all files to disk
     const results = await esbuild.build({  
-      ...this._build,
-      outdir: this._endpath,
+      ...this.options,
+      outdir: this.builddir,
       entryPoints: Array.from(vfs.keys()),
       plugins: [ esIngestPlugin(vfs, this.loader) ]
     });
-    //write the manifest to disk
-    const json = Array.from(build).map(result => {
-      return { ...result, pattern: result.pattern?.toString() };
-    });
-    this.loader.fs.writeFileSync(
-      this._manifest, 
-      JSON.stringify(json, null, 2), 
-      'utf-8'
-    );
     //be friendly
     return { build, results, vfs };
   }

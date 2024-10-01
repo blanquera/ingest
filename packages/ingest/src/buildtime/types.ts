@@ -1,6 +1,4 @@
 import type { SourceFile } from 'ts-morph';
-import type Request from '../payload/Request';
-import type Response from '../payload/Response';
 
 //--------------------------------------------------------------------//
 // Task Queue Types
@@ -12,13 +10,6 @@ export type Entry = {
   //The priority of the task, when placed in a queue
   priority: number;
 };
-
-//Abstraction defining what a task runner is
-export type TaskRunner<T> = (
-  req: Request, 
-  res: Response, 
-  ctx: T
-) => boolean|void|Promise<boolean|void>;
 
 //--------------------------------------------------------------------//
 // Event Emitter Types
@@ -60,17 +51,6 @@ export type Revision = {
   value?: string|string[]
 };
 
-export type CookieOptions = {
-  domain?: string;
-  expires?: Date;
-  httpOnly?: boolean;
-  maxAge?: number;
-  path?: string;
-  priority?: 'low'|'medium'|'high';
-  sameSite?: boolean|'lax'|'strict'|'none';
-  secure?: boolean;
-};
-
 //--------------------------------------------------------------------//
 // Build Types
 
@@ -84,6 +64,17 @@ export type BuildInfo = {
   pattern?: RegExp,
   tasks: Set<Entry>
 };
+
+export type TranspileInfo = {
+  type: BuildType,
+  method: Method,
+  event: string,
+  route: string,
+  pattern?: RegExp,
+  entries: string[]
+};
+
+export type Transpiler = (info: TranspileInfo) => SourceFile;
 
 export type BuildResult = {
   id: string;
@@ -121,5 +112,3 @@ export type BuildOptions = ESBuildOptions & {
 export type BuilderOptions = {
   tsconfig?: string
 };
-
-export type Transpiler = (entries: string[]) => SourceFile

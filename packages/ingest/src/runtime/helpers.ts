@@ -1,8 +1,5 @@
 import Nest from '../payload/Nest';
 
-export const FetchRequest = Request;
-export const FetchResponse = Response;
-
 /**
  * Returns true if the value is a native JS object
  */

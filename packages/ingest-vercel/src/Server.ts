@@ -1,61 +1,16 @@
-import type { ServerOptions } from 'http';
-import type { IM, SR } from './helpers';
-import type { BuildResult } from '../buildtime/types';
-import type FileLoader from '../buildtime/filesystem/FileLoader';
-import type TaskQueue from '../runtime/TaskQueue';
+import type { FetchRequest } from './helpers';
+import type TaskQueue from '@blanquera/ingest/dist/runtime/TaskQueue';
 
-import http from 'http';
-import Exception from '../Exception';
-import StatusCode from '../runtime/StatusCode';
-import Context from '../runtime/Context';
-import Request from '../payload/Request';
-import Response from '../payload/Response';
-import { loader, dispatcher, imToURL } from './helpers';
+import StatusCode from '@blanquera/ingest/dist/runtime/StatusCode';
+import Context from '@blanquera/ingest/dist/runtime/Context';
+import Request from '@blanquera/ingest/dist/payload/Request';
+import Response from '@blanquera/ingest/dist/payload/Response';
+import Exception from '@blanquera/ingest/dist/Exception';
+import { loader, response } from './helpers';
 
 export default class Server {
   //runtime context shareable to all endpoints
   public readonly context = new Context();
-
-  /**
-   * Sets up the server with the given manifest
-   */
-  public constructor(manifest: string, loader: FileLoader) {
-    //check if the manifest exists
-    if (!loader.fs.existsSync(manifest)) return;
-    //get the manifest
-    const contents = loader.fs.readFileSync(manifest, 'utf8');
-    //parse the manifest
-    const results = JSON.parse(contents) as BuildResult[];
-    //make sure build is an array
-    if (!Array.isArray(results)) return;
-    //loop through the manifest
-    results.forEach(({ pattern, entry, event }) => {
-      const regex = pattern?.toString() || '';
-      const listener = pattern ? new RegExp(
-        // pattern,
-        regex.substring(
-          regex.indexOf('/') + 1,
-          regex.lastIndexOf('/')
-        ),
-        // flag
-        regex.substring(
-          regex.lastIndexOf('/') + 1
-        )
-      ) : event;
-      //and add the routes
-      this.context.on(listener, async (req, res, ctx) => {
-        const { queue } = await import(entry) as { queue: TaskQueue };
-        await queue.run(req, res, ctx);
-      });
-    });
-  }
-
-  /**
-   * Creates an HTTP server with the given options
-   */
-  public create(options: ServerOptions = {}) {
-    return http.createServer(options, (im, sr) => this.handle(im, sr));
-  }
 
   /**
    * 3. Runs the 'response' event and interprets
@@ -68,9 +23,10 @@ export default class Server {
   }
 
   /**
-   * Handles a payload using events
+   * Emit a series of events in order to catch and 
+   * manipulate the payload in different stages
    */
-  public async emit(event: string, req: Request, res: Response) {
+  public async emit(queue: TaskQueue, req: Request, res: Response) {
     //try to trigger request pre-processors
     if (!await this.prepare(req, res)) {
       //if the request exits, then stop
@@ -78,7 +34,7 @@ export default class Server {
     }
     // from here we can assume that it is okay to
     // continue with processing the routes
-    if (!await this.process(event, req, res)) {
+    if (!await this.process(queue, req, res)) {
       //if the request exits, then stop
       return false;
     }
@@ -94,13 +50,13 @@ export default class Server {
   /**
    * Handles fetch requests
    */
-  public async handle(im: IM, sr: SR) {
+  public async handle(request: FetchRequest, queue: TaskQueue) {
     //initialize the request
-    const { event, req, res } = await this.initialize(im, sr);
+    const { req, res } = await this.initialize(request);
     try { //to load the body
       await req.load();
       //then try to emit the event
-      await this.emit(event, req, res);
+      await this.emit(queue, req, res);
     } catch(e) {
       const error = e as Error;
       res.code = res.code && res.code !== 200 
@@ -110,24 +66,25 @@ export default class Server {
       //let middleware contribute after error
       await this.context.emit('error', req, res);
     }
-    //if the response was not sent by now,
-    if (!res.sent) {
-      //send the response
-      res.dispatch();
-    }
-    return sr;
+    //We would normally dispatch, but we can only create the
+    //fetch response when all the data is ready...
+    // if (!res.sent) {
+    //   //send the response
+    //   res.dispatch();
+    // }
+    //just map the ingets response to a fetch response
+    return response(res);
   }
 
   /**
    * Sets up the request, response and determines the event
    */
-  public async initialize(im: IM, sr: SR) {
+  public async initialize(request: FetchRequest) {
+    //setup the payload
     const req = new Request();
-    req.loader = loader(im);
+    req.loader = loader(request);
     const res = new Response();
-    res.dispatcher = dispatcher(sr);
-    const event = im.method + ' ' + imToURL(im).pathname;
-    return { event, req, res };
+    return { req, res };
   }
 
   /**
@@ -142,8 +99,8 @@ export default class Server {
   /**
    * 2. Runs the route event and interprets
    */
-  public async process(event: string, req: Request, res: Response) {
-    const status = await this.context.emit(event, req, res);
+  public async process(queue: TaskQueue, req: Request, res: Response) {
+    const status = await queue.run(req, res, this.context);
     //if the status was incomplete (308)
     if (status.code === StatusCode.ABORT.code) {
       //the callback that set that should have already processed

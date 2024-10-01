@@ -2,6 +2,7 @@ import type { ProjectOptions } from 'ts-morph';
 import type { 
   BuilderOptions,
   BuildOptions,
+  TranspileInfo,
   Transpiler
 } from '../buildtime/types';
 import Router from '../buildtime/Router';
@@ -40,11 +41,11 @@ export default class Builder {
   /**
    * Creates an entry file
    */
-  public transpile(entries: string[]) {
+  public transpile(info: TranspileInfo) {
     //create a new source file
     const { source } = createSourceFile('entry.ts', this._tsconfig);
     //import task1 from [entry]
-    entries.forEach((entry, i) => {
+    info.entries.forEach((entry, i) => {
       source.addImportDeclaration({
         moduleSpecifier: entry,
         defaultImport: `task_${i}`
@@ -64,7 +65,7 @@ export default class Builder {
       }]
     });
     //queue.add(task_0);
-    entries.forEach((_, i) => {
+    info.entries.forEach((_, i) => {
       source.addStatements(`queue.add(task_${i});`);
     });
     source.addStatements('exports.queue = queue;');
@@ -79,6 +80,17 @@ export default class Builder {
     const transpiler: Transpiler = entries => {
       return this.transpile(entries);
     }
-    return await manifest.build(transpiler);
+    const results = await manifest.build(transpiler);
+    //write the manifest to disk
+    const json = Array.from(results.build).map(result => {
+      return { ...result, pattern: result.pattern?.toString() };
+    });
+    manifest.loader.fs.writeFileSync(
+      manifest.path, 
+      JSON.stringify(json, null, 2), 
+      'utf-8'
+    );
+
+    return results;
   }
 }

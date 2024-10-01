@@ -9,10 +9,12 @@
     "dev": "ts-node src/server.ts"
   },
   "dependencies": {
-    "@blanquera/ingest": "0.1.0"
+    "@blanquera/ingest": "0.0.1"
   },
   "devDependencies": {
     "@types/node": "22.1.0",
+    "esbuild": "0.24.0",
+    "ts-morph": "23.0.0",
     "ts-node": "10.9.2",
     "typescript": "5.5.4"
   }

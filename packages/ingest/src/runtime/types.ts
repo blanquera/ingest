@@ -100,9 +100,6 @@ export type Body = string | Buffer | Uint8Array
 export type RequestLoader = (req: Request) => Promise<void>;
 export type ResponseDispatcher = (res: Response) => Promise<void>;
 
-export type FetchRequest = globalThis.Request;
-export type FetchResponse = globalThis.Response;
-
 //--------------------------------------------------------------------//
 // Session Types
 

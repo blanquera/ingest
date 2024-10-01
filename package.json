@@ -7,7 +7,9 @@
   "scripts": {
     "build": "yarn run build:ingest && yarn run build:http",
     "build:ingest": "yarn --cwd packages/ingest build",
-    "build:http": "yarn --cwd examples/with-http build",
+    "build:vercel": "yarn --cwd packages/ingest-vercel build",
+    "build:example:http": "yarn --cwd examples/with-http build",
+    "build:example:vercel": "yarn --cwd examples/with-vercel build:api",
     "dev:http": "yarn --cwd examples/with-http dev"
   },
   "devDependencies": {
