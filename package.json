@@ -1,36 +1,16 @@
 {
-  "name": "@blanquera/ingest",
-  "version": "0.1.0",
-  "license": "MIT",
-  "description": "An event driven serverless framework",
-  "author": "Chris <chris@blanquera.io>",
-  "homepage": "https://github.com/blanquera/ingest/tree/main/packages/types",
-  "bugs": "https://github.com/blanquera/ingest/issues",
-  "repository": "blanquera/ingest",
-  "main": "index.js",
-  "types": "index.d.ts",
-  "files": [
-    "index.js",
-    "index.d.ts",
-    "dist"
+  "private": true,
+  "workspaces": [
+    "examples/*",
+    "packages/*"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "ts-node tests/server.ts"
-  },
-  "dependencies": {
-    "cookie": "0.6.0"
-  },
-  "peerDependencies": {
-    "axios": "^1.3.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "build": "yarn run build:ingest && yarn run build:http",
+    "build:ingest": "yarn --cwd packages/ingest build",
+    "build:http": "yarn --cwd examples/with-http build",
+    "dev:http": "yarn --cwd examples/with-http dev"
   },
   "devDependencies": {
-    "@types/cookie": "0.6.0",
-    "@types/node": "22.7.4",
-    "axios": "1.3.0",
-    "ts-node": "10.9.2",
-    "typescript": "5.6.2"
+    "npm-run-all": "4.1.5"
   }
 }
