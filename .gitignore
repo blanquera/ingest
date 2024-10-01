@@ -130,3 +130,5 @@ dist
 .pnp.*
 archives
 .http
+.vercel
+examples/with-vercel/api
